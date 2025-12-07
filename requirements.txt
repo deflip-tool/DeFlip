@@ -1,0 +1,12 @@
+pandas
+numpy
+scikit-learn
+lightgbm
+catboost
+xgboost
+tqdm
+joblib
+natsort
+mlxtend
+rpy2
+matplotlib
