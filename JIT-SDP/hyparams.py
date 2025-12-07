@@ -12,15 +12,16 @@ EXPERIMENTS = "./experiments"
 RESULTS = "./flip_rates"
 
 # ---------------- JIT Dataset configuration ----------------
+ROOT_DIR = "/Users/joony/Downloads/DeFlip-main"
 # Where your raw JIT CSV lives (total.csv with all projects)
-JIT_DATASET_PATH = "./Dataset/apachejit_total.csv"
+JIT_DATASET_PATH = f"{ROOT_DIR}/JIT-SDP/Dataset/apachejit_total.csv"
 
 # Where your preprocess step writes per-project train/test:
 #   <RELEASE_DATASET>/<project>@0/{train.csv,test.csv,mapping.csv}
-RELEASE_DATASET = "./apache_jit/Dataset/jit_preprocessed"
+RELEASE_DATASET = f"{ROOT_DIR}/JIT-SDP/Dataset/jit_preprocessed"
 
 # (Optional legacy; some helpers/tools may still reference this)
-PROJECT_DATASET = "./Dataset/project_dataset"
+PROJECT_DATASET = f"{ROOT_DIR}/JIT-SDP/Dataset/project_dataset"
 
 # ---------------- Experiment switches ----------------
 EXPLAINER_TYPES = [

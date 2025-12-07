@@ -28,14 +28,20 @@ def study_context(study_folder: str):
     finally:
         sys.path.remove(str(study_path))
 
-
-def load_module(module_path: Path, name: str):
-    """Load a module from ``module_path`` under a temporary name."""
+def load_module(module_path: Path, name: str | None = None):
+    """Load a module from module_path so that it is importable by name (needed for multiprocessing)."""
+    if name is None:
+        name = module_path.stem  # e.g. run_explainer.py -> "run_explainer"
 
     spec = importlib.util.spec_from_file_location(name, module_path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Could not load module from {module_path}")
+
     module = importlib.util.module_from_spec(spec)
+
+    # 🔑 CRUCIAL: register in sys.modules so multiprocessing can re-import it
+    sys.modules[name] = module
+
     spec.loader.exec_module(module)
     return module
 
@@ -82,7 +88,7 @@ def jit_run_explanations(model_type: str, explainer_type: str, project: str):
     with study_context("JIT-SDP") as study_path:
         # CfExplainer and PyExplainer have dedicated runners; LIME/LIME-HPO reuse run_explainer.py
         if explainer_type == "CfExplainer":
-            args = ["--model_type", model_type, "--project", project]
+            args = ["--model-type", model_type]
             run_script(study_path / "run_cfexp.py", args)
             return
 
@@ -91,8 +97,8 @@ def jit_run_explanations(model_type: str, explainer_type: str, project: str):
             run_script(study_path / "run_pyexp.py", args)
             return
 
-        data_utils = load_module(study_path / "data_utils.py", "jit_data_utils")
-        runner = load_module(study_path / "run_explainer.py", "jit_run_explainer")
+        data_utils = load_module(study_path / "data_utils.py", "data_utils")
+        runner = load_module(study_path / "run_explainer.py", "run_explainer")
         projects = data_utils.read_dataset()
         for project_name in resolve_projects(projects, project):
             train, test = projects[project_name]
