@@ -36,6 +36,7 @@ DeFlip/
 │   ├── train_models*.py         # Train/evaluate RF, SVM, XGB, LGBM, CatB
 │   ├── run_explainer.py         # Run range-based explainers
 │   ├── generate_closest_plans.py# Actionable plan generation
+│   ├── plan_explanations.py     # Actionable plan generation
 │   ├── flip_exp.py              # Flip simulation (plans)
 │   ├── flip_closest.py          # Flip simulation (closest plans)
 │   └── evaluate_cf.py           # Aggregation for RQ1–RQ3 (release-based)
@@ -79,18 +80,18 @@ Figure 2 summarizes the end-to-end workflow. Each step below links directly to t
    * Apply trained models to the test set to obtain defect predictions.
    * Focus on **true positive** defective instances as seeds for actionable guidance.
 
-4. **Actionable guidance generation (baseline explainers + DeFlip)** ([`SDP/run_explainer.py`](SDP/run_explainer.py), [`JIT-SDP/run_explainer.py`](JIT-SDP/run_explainer.py), [`JIT-SDP/run_cfexp.py`](JIT-SDP/run_cfexp.py), [`JIT-SDP/run_pyexp.py`](JIT-SDP/run_pyexp.py), [`SDP/cf.py`](SDP/cf.py), [`JIT-SDP/cf.py`](JIT-SDP/cf.py))
+4. **Actionable guidance generation (baseline explainers + DeFlip)** ([`SDP/run_explainer.py`](SDP/run_explainer.py), [`JIT-SDP/run_explainer.py`](JIT-SDP/run_explainer.py), [`JIT-SDP/run_cfexp.py`](JIT-SDP/run_cfexp.py), [`JIT-SDP/run_pyexp.py`](JIT-SDP/run_pyexp.py), [`SDP/flip_exp.py`](SDP/flip_exp.py), [`SDP/flip_closest.py`](SDP/flip_closest.py), [`JIT-SDP/flip_exp.py`](JIT-SDP/flip_exp.py), [`JIT-SDP/flip_closest.py`](JIT-SDP/flip_closest.py), [`SDP/cf.py`](SDP/cf.py), [`JIT-SDP/cf.py`](JIT-SDP/cf.py))
    * For each predicted defective instance, generate guidance using:
      * **Range-based explainers:** LIME, LIME-HPO, TimeLIME, SQAPlanner
      * **Candidate-based explainers:** PyExplainer, CfExplainer
      * **DeFlip counterfactuals**
 
-5. **DeFlip’s three phases** ([`SDP/cf.py`](SDP/cf.py), [`SDP/niceml.py`](SDP/niceml.py), [`JIT-SDP/cf.py`](JIT-SDP/cf.py))
+5. **DeFlip’s three phases** ([`SDP/cf.py`](SDP/cf.py), [`JIT-SDP/cf.py`](JIT-SDP/cf.py))
    * **Phase 1 – Neighbor Anchoring (with NICE):** Use NICE to find the nearest non-defective instance in training data via HEOM distance; this anchor grounds the search in real project history.
    * **Phase 2 – Constrained Beam Search:** Starting from the defective instance, perform beam search toward the anchor while changing at most **K features**, retaining only candidates that flip the prediction to “clean” within the sparsity budget.
    * **Phase 3 – Fine-grained Optimization:** Incrementally pull each modified feature back toward its original value (binary search) until just inside the non-defective region, minimizing change magnitude while preserving the flip.
 
-6. **Evaluation (RQ1–RQ3)** ([`SDP/flip_exp.py`](SDP/flip_exp.py), [`SDP/flip_closest.py`](SDP/flip_closest.py), [`SDP/evaluate_cf.py`](SDP/evaluate_cf.py), [`JIT-SDP/flip_exp.py`](JIT-SDP/flip_exp.py), [`JIT-SDP/flip_closest.py`](JIT-SDP/flip_closest.py), [`JIT-SDP/evaluate_final.py`](JIT-SDP/evaluate_final.py), [`JIT-SDP/evaluate_closest.py`](JIT-SDP/evaluate_closest.py), [`plot_rq1.py`](plot_rq1.py), [`plot_rq2.py`](plot_rq2.py), [`plot_rq3.py`](plot_rq3.py))
+6. **Evaluation (RQ1–RQ3)** ( [`SDP/evaluate_cf.py`](SDP/evaluate_cf.py), [`JIT-SDP/evaluate_final.py`](JIT-SDP/evaluate_final.py), [`JIT-SDP/evaluate_closest.py`](JIT-SDP/evaluate_closest.py), [`plot_rq1.py`](plot_rq1.py), [`plot_rq2.py`](plot_rq2.py), [`plot_rq3.py`](plot_rq3.py))
    * **RQ1 – Validity of actionable guidance:** Flip simulation on model predictions; compute flip rate and exploration depth.
    * **RQ2 – Cost-efficiency and precision:** Measure change magnitude for successful flips under the sparsity constraint.
    * **RQ3 – Naturalness of modifications:** Compare suggested changes to historical modifications using multivariate distance (e.g., Mahalanobis).
@@ -234,3 +235,11 @@ python replication_cli.py {jit|sdp} <command> [options]
 * `run-all` – Full SDP pipeline with options to `--skip-preprocess`, `--skip-training`, `--include-counterfactuals`, `--include-extended-models`, and `--closest`.
 
 Use the workflow and mapping tables above to select the command combinations that reproduce specific figures and tables.
+
+@article{lee2025deflip,
+  title={DeFlip: Towards Trustworthy Actionable Software Defect Prediction via Fine-grained Counterfactuals},
+  author={Lee, Gichan and Lee, Joonwoo and Lee, Scott Uk-Jin},
+  journal={Empirical Software Engineering},
+  year={2025},
+  note={Under Review}
+}
