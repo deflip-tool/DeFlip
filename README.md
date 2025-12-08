@@ -101,7 +101,7 @@ Figure 2 summarizes the end-to-end workflow. Each step below links directly to t
 | Script / Path | Purpose | Figures / Tables | Related RQ(s) | Notes |
 |---------------|---------|------------------|---------------|-------|
 | `SDP/preprocess.py` | Preprocess release-based SDP datasets (noise handling, AutoSpearman) feeding all downstream analyses. | Supports all release-based figures/tables | RQ1, RQ2, RQ3 | Run once before SDP experiments. |
-| `SDP/train_models.py` & `SDP/train_models_new.py` | Train/evaluate RandomForest, SVM, XGBoost, LightGBM, CatBoost for release-based SDP. | Supports all release-based figures/tables | RQ1, RQ2, RQ3 | Include `train_models_new.py` for LightGBM/CatBoost. |
+| `SDP/train_models.py` | Train/evaluate RandomForest, SVM, XGBoost, LightGBM, CatBoost for release-based SDP. | Supports all release-based figures/tables | RQ1, RQ2, RQ3 |  |
 | `SDP/run_explainer.py` & `SDP/generate_closest_plans.py` | Run LIME/LIME-HPO/TimeLIME/SQAPlanner and derive actionable plans. | Figures for release-based plan baselines (RQ1–RQ2 tables/plots) | RQ1, RQ2 | SQAPlanner requires rule mining via `SDP/mining_sqa_rules.py`. |
 | `SDP/cf.py` & `SDP/niceml.py` | Generate DeFlip/NICE counterfactuals for release-based SDP. | DeFlip lines in release-based figures/tables | RQ1, RQ2 | Use after model training; configurable sparsity and distance metrics. |
 | `SDP/flip_exp.py` & `SDP/flip_closest.py` | Flip simulation for plan-based guidance (full vs closest plans). | Release-based RQ1 flip-rate figures/tables | RQ1 | `flip_closest.py` uses smallest-change plans. |
