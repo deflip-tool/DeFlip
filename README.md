@@ -1,255 +1,239 @@
-# DeFlip-SDP Replication Package
+# DeFlip: Towards Trustworthy Actionable Software Defect Prediction via Fine-grained Counterfactuals – Replication Package
 
-This repository contains the experiment code for the DeFlip study across two settings:
+Replication package for the DeFlip study across release-based Software Defect Prediction (SDP) and Just-In-Time SDP (JIT-SDP), including preprocessing, model training, explainer integrations, counterfactual generation, and evaluation scripts.
 
-- **JIT-SDP** (`JIT-SDP/`): Just-in-time defect prediction.
-- **SDP** (`SDP/`): Software defect prediction.
+## About the Paper
 
-## Repository Layout
+Software defect prediction (SDP) is increasingly expected not just to flag risky modules, but to give developers **actionable guidance** on how to change code so that predicted defects are actually resolved. Many recent SDP studies combine defect prediction with model-agnostic XAI techniques such as LIME, TimeLIME, SQAPlanner, PyExplainer, and CfExplainer, but these tools still leave a **trustworthiness gap**: they often fail to guarantee that following the suggested guidance will fix the defect, they may require unnecessarily large changes, or they propose unrealistic modifications that do not resemble real project history.
 
-- `JIT-SDP/` – Training scripts, explainers, counterfactual generators, and utilities for
-  the JIT study. Dataset and output locations are configured in `JIT-SDP/hyparams.py`.
-- `SDP/` – Training, preprocessing, and explainer code for the SDP study. Paths live in
-  `SDP/hyparams.py`.
-- `plot_rq1.py`, `plot_rq2.py`, `plot_rq3.py` – Plotting utilities used by the paper.
-- `replication_cli.py` – An orchestration CLI that wraps the key pipelines for both
-  studies.
+**DeFlip** is a counterfactual-explanation framework designed to bridge this gap. It anchors its search to real non-defective instances from project history, then uses constrained beam search and fine-grained optimization to find **precise, low-cost modifications** that deterministically flip a model’s prediction from “defective” to “clean” while respecting a sparsity constraint on the number of changed features. DeFlip is built on top of the Nearest Instance Counterfactual Explanations (NICE) algorithm but extends it with SDP-specific mechanisms for sparsity, realism, and precision.
 
-## Environment Setup
+This replication package evaluates DeFlip against state-of-the-art baselines across both **release-based SDP** and **Just-In-Time SDP (JIT-SDP)** scenarios, using five prediction models (Random Forest, SVM, XGBoost, LightGBM, CatBoost) and widely used datasets.
 
-1. Create and activate a Python 3.10+ environment.
-2. Install the Python dependencies:
+The study addresses three research questions:
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+* **RQ1 – Validity of actionable guidance**
+  Does the guidance deterministically resolve predicted defects when applied (measured via flip simulation of model predictions)?
 
-3. (SDP preprocessing only) Install the R package [`Rnalytica`](https://cran.r-project.org/package=Rnalytica)
-   and ensure `rpy2` can locate your R installation.
+* **RQ2 – Cost-efficiency and precision**
+  How large are the required changes for successful fixes, and does the guidance approximate the smallest modification needed to cross the decision boundary (magnitude of changes quantification)?
 
-## Datasets
+* **RQ3 – Naturalness of modifications**
+  Are the suggested modifications statistically aligned with real historical changes in the project (distributional alignment check using multivariate distances)?
 
-Dataset roots are configured in each study's `hyparams.py` file. Update the paths there to
-point to your local copies before running the pipelines. Common locations include:
+Empirical results on large-scale release-based and JIT-SDP datasets show that DeFlip provides **near-deterministic defect resolution with lower modification cost**, while preserving or improving the naturalness of suggested changes compared to existing XAI-for-SDP tools.
 
-- **JIT-SDP:**
-  - Raw CSV: `JIT-SDP/hyparams.py::JIT_DATASET_PATH`
-  - Preprocessed per-release data: `JIT-SDP/hyparams.py::RELEASE_DATASET`
-- **SDP:**
-  - Original per-project CSVs: `SDP/hyparams.py::ORIGINAL_DATASET`
-  - Preprocessed release splits: `SDP/hyparams.py::RELEASE_DATASET` (defaults to
-    `./SDP/Dataset/release_dataset` in the current repo state)
+## Repository Structure
 
-## Study script reference
+```text
+DeFlip/
+├── SDP/                         # Release-based SDP pipelines and evaluations
+│   ├── Dataset/                 # Original and preprocessed release splits
+│   ├── Explainer/               # LIME, LIME-HPO, TimeLIME, SQAPlanner wrappers
+│   ├── models/                  # Model definitions and utilities
+│   ├── cf.py / niceml.py        # DeFlip counterfactual generation
+│   ├── preprocess.py            # Noise handling, missing values, AutoSpearman
+│   ├── train_models*.py         # Train/evaluate RF, SVM, XGB, LGBM, CatB
+│   ├── run_explainer.py         # Run range-based explainers
+│   ├── generate_closest_plans.py# Actionable plan generation
+│   ├── flip_exp.py              # Flip simulation (plans)
+│   ├── flip_closest.py          # Flip simulation (closest plans)
+│   └── evaluate_cf.py           # Aggregation for RQ1–RQ3 (release-based)
+├── JIT-SDP/                     # JIT-SDP pipelines on ApacheJIT
+│   ├── Dataset/                 # Commit-level data and splits
+│   ├── Explainer/               # PyExplainer, CfExplainer integrations
+│   ├── cf.py                    # DeFlip counterfactual generation
+│   ├── preprocess_jit.py        # JIT preprocessing and feature prep
+│   ├── train_models_jit.py      # Train/evaluate RF, SVM, XGB, LGBM, CatB
+│   ├── run_explainer.py         # LIME / LIME-HPO explainers
+│   ├── run_cfexp.py / run_pyexp.py # Candidate-based explainers
+│   ├── plan_explanations.py     # Plan construction for full guidance from range explainers
+│   ├── plan_final.py / plan_closest.py # Plans for candidate explainers / closest (minimum-change) guidance
+│   ├── flip_exp.py              # Flip simulation (plans)
+│   ├── flip_closest.py          # Flip simulation (closest plans)
+│   └── evaluate_final.py        # Aggregation for RQ1–RQ3 (JIT-SDP)
+├── plot_rq1.py / plot_rq2.py / plot_rq3.py  # Figure regeneration scripts
+├── replication_cli.py           # Unified CLI entry point for all experiments
+├── requirements.txt             # Python dependencies
+└── Figure_2.png                 # Overview of the experimental design
+```
 
-The tables below recap the key scripts and their roles in each study. Use them directly
-or through the orchestration CLI shown later.
+`SDP/` and `JIT-SDP/` correspond to release-based and JIT-SDP experiments. Each folder contains preprocessing, model training, and explainer/counterfactual modules that map directly onto the workflow described below. The RQ aggregation scripts feed into `plot_rq*.py` to regenerate the figures and tables referenced in the paper (see [Mapping from Scripts to Figures, Tables, and RQs](#mapping-from-scripts-to-figures-tables-and-rqs)).
 
-### JIT-SDP
+## Experimental Workflow (High-Level)
 
-1. `preprocess_jit.py` – Prepare Apache JIT data.
-2. `train_models_jit.py` – Train or evaluate JIT classifiers.
-3. `run_explainer.py` – Run LIME/LIME-HPO for explanations.
-   - `run_cfexp.py` – CfExplainer neighbourhood + rule mining pipeline.
-   - `run_pyexp.py` – PyExplainer neighbourhood search.
-4. `plan_explanations.py` – Convert explainer outputs into actionable plans.
-   - `plan_final.py` – Build plans for CfExplainer/PyExplainer outputs.
-5. `plan_closest.py` – Derive minimum-change plans.
-6. `flip_exp.py` – Apply plans to test true positives and measure flips.
-7. `flip_closest.py` – Flip evaluation restricted to closest/minimum plans.
-8. `cf.py` - Runs modified NICE
-   and the DeFlip algorithm to generate counterfactuals.
-9. `evaluate.py` / `evaluate_closest.py` – RQ1–RQ3 + implications aggregation for default and
-   closest-plan pipelines.
+![Figure 2. Overview of the experimental design and data flow](Figure_2.png)
 
-### SDP
+Figure 2 summarizes the end-to-end workflow. Each step below links directly to the corresponding scripts so reviewers can jump from the diagram to runnable code.
 
-1. `preprocess.py` – Preprocess with AutoSpearman feature selection.
-2. `train_models.py` – Train RandomForest/XGBoost/SVM models.
-3. `run_explainer.py` – Run LIME/LIME-HPO/TimeLIME/SQAPlanner explainers.
-4. `mining_sqa_rules.py` – BigML rule mining step required before SQAPlanner plans
-   (uses `.env` with `BIGML_USERNAME` and `BIGML_API_KEY`).
-5. `generate_closest_plans.py` – Convert explainer outputs into plans (stored under
-   `plans_closest/`) and compute importance ratios when requested.
-6. `flip_exp.py` – Flip simulation over generated plans.
-7. `flip_closest.py` – Flip simulation restricted to closest plans.
-8. `cf.py` – Runs modified NICE and the DeFlip
-   algorithm to generate counterfactuals.
-9. `evaluate.py` / `evaluate_closest.py` – RQ1–RQ3 + implications
-   aggregation for full and closest-plan pipelines.
+1. **Raw dataset → Preprocessing** ([`SDP/preprocess.py`](SDP/preprocess.py), [`JIT-SDP/preprocess_jit.py`](JIT-SDP/preprocess_jit.py))
+   * Start from raw release-based SDP datasets and the ApacheJIT JIT-SDP dataset.
+   * Clean and prepare the data by removing noise, handling missing or incorrect values, and applying **AutoSpearman** feature selection to drop highly correlated features.
+   * Output: processed datasets for each project/domain.
 
-## Command-Line Orchestration
+2. **SDP model training** ([`SDP/train_models.py`](SDP/train_models.py), [`SDP/train_models_new.py`](SDP/train_models_new.py), [`JIT-SDP/train_models_jit.py`](JIT-SDP/train_models_jit.py))
+   * Train five defect prediction models on the processed datasets: **Random Forest, SVM, XGBoost, LightGBM, CatBoost**.
+   * Use release-to-release prediction for release-based SDP and an 80/20 split for JIT-SDP.
 
-`replication_cli.py` exposes consistent entry points for both studies. Run `--help` on any
-command to see available options.
+3. **Test-set prediction** (integrated in the training scripts above)
+   * Apply trained models to the test set to obtain defect predictions.
+   * Focus on **true positive** defective instances as seeds for actionable guidance.
 
-### JIT-SDP
+4. **Actionable guidance generation (baseline explainers + DeFlip)** ([`SDP/run_explainer.py`](SDP/run_explainer.py), [`JIT-SDP/run_explainer.py`](JIT-SDP/run_explainer.py), [`JIT-SDP/run_cfexp.py`](JIT-SDP/run_cfexp.py), [`JIT-SDP/run_pyexp.py`](JIT-SDP/run_pyexp.py), [`SDP/cf.py`](SDP/cf.py), [`JIT-SDP/cf.py`](JIT-SDP/cf.py))
+   * For each predicted defective instance, generate guidance using:
+     * **Range-based explainers:** LIME, LIME-HPO, TimeLIME, SQAPlanner
+     * **Candidate-based explainers:** PyExplainer, CfExplainer
+     * **DeFlip counterfactuals**
+   * Convert explanations into actionable plans for flip simulation via [`JIT-SDP/plan_explanations.py`](JIT-SDP/plan_explanations.py) or [`JIT-SDP/plan_final.py`](JIT-SDP/plan_final.py); use [`JIT-SDP/plan_closest.py`](JIT-SDP/plan_closest.py) when evaluating closest/minimum-change guidance.
 
-- Train all models:
+5. **DeFlip’s three phases** ([`SDP/cf.py`](SDP/cf.py), [`SDP/niceml.py`](SDP/niceml.py), [`JIT-SDP/cf.py`](JIT-SDP/cf.py))
+   * **Phase 1 – Neighbor Anchoring (with NICE):** Use NICE to find the nearest non-defective instance in training data via HEOM distance; this anchor grounds the search in real project history.
+   * **Phase 2 – Constrained Beam Search:** Starting from the defective instance, perform beam search toward the anchor while changing at most **K features**, retaining only candidates that flip the prediction to “clean” within the sparsity budget.
+   * **Phase 3 – Fine-grained Optimization:** Incrementally pull each modified feature back toward its original value (binary search) until just inside the non-defective region, minimizing change magnitude while preserving the flip.
 
+6. **Evaluation (RQ1–RQ3)** ([`SDP/flip_exp.py`](SDP/flip_exp.py), [`SDP/flip_closest.py`](SDP/flip_closest.py), [`SDP/evaluate_cf.py`](SDP/evaluate_cf.py), [`JIT-SDP/flip_exp.py`](JIT-SDP/flip_exp.py), [`JIT-SDP/flip_closest.py`](JIT-SDP/flip_closest.py), [`JIT-SDP/evaluate_final.py`](JIT-SDP/evaluate_final.py), [`JIT-SDP/evaluate_closest.py`](JIT-SDP/evaluate_closest.py), [`plot_rq1.py`](plot_rq1.py), [`plot_rq2.py`](plot_rq2.py), [`plot_rq3.py`](plot_rq3.py))
+   * **RQ1 – Validity of actionable guidance:** Flip simulation on model predictions; compute flip rate and exploration depth.
+   * **RQ2 – Cost-efficiency and precision:** Measure change magnitude for successful flips under the sparsity constraint.
+   * **RQ3 – Naturalness of modifications:** Compare suggested changes to historical modifications using multivariate distance (e.g., Mahalanobis).
+
+## Mapping from Scripts to Figures, Tables, and RQs
+
+| Script / Path | Purpose | Figures / Tables | Related RQ(s) | Notes |
+|---------------|---------|------------------|---------------|-------|
+| `SDP/preprocess.py` | Preprocess release-based SDP datasets (noise handling, AutoSpearman) feeding all downstream analyses. | Supports all release-based figures/tables | RQ1, RQ2, RQ3 | Run once before SDP experiments. |
+| `SDP/train_models.py` & `SDP/train_models_new.py` | Train/evaluate RandomForest, SVM, XGBoost, LightGBM, CatBoost for release-based SDP. | Supports all release-based figures/tables | RQ1, RQ2, RQ3 | Include `train_models_new.py` for LightGBM/CatBoost. |
+| `SDP/run_explainer.py` & `SDP/generate_closest_plans.py` | Run LIME/LIME-HPO/TimeLIME/SQAPlanner and derive actionable plans. | Figures for release-based plan baselines (RQ1–RQ2 tables/plots) | RQ1, RQ2 | SQAPlanner requires rule mining via `SDP/mining_sqa_rules.py`. |
+| `SDP/cf.py` & `SDP/niceml.py` | Generate DeFlip/NICE counterfactuals for release-based SDP. | DeFlip lines in release-based figures/tables | RQ1, RQ2 | Use after model training; configurable sparsity and distance metrics. |
+| `SDP/flip_exp.py` & `SDP/flip_closest.py` | Flip simulation for plan-based guidance (full vs closest plans). | Release-based RQ1 flip-rate figures/tables | RQ1 | `flip_closest.py` uses smallest-change plans. |
+| `SDP/evaluate_cf.py` | Aggregate flip rates, change magnitudes, and naturalness metrics across explainers/models. | Release-based RQ1–RQ3 tables/plots | RQ1, RQ2, RQ3 | Inputs consumed by `plot_rq*.py`. |
+| `JIT-SDP/preprocess_jit.py` | Preprocess ApacheJIT commits for JIT-SDP. | Supports all JIT-SDP figures/tables | RQ1, RQ2, RQ3 | Run once before JIT experiments. |
+| `JIT-SDP/train_models_jit.py` | Train/evaluate JIT-SDP classifiers. | Supports all JIT-SDP figures/tables | RQ1, RQ2, RQ3 | Shares model set with release-based experiments. |
+| `JIT-SDP/run_explainer.py`, `JIT-SDP/run_cfexp.py`, `JIT-SDP/run_pyexp.py` | Run LIME/LIME-HPO (range) and CfExplainer/PyExplainer (candidate) explainers for JIT. | JIT-SDP plan baseline figures/tables (RQ1–RQ2) | RQ1, RQ2 | CfExplainer/PyExplainer require dedicated runners. |
+| `JIT-SDP/plan_explanations.py` | Convert range-based JIT explanations into full actionable plans. | JIT-SDP RQ1 flip-rate and RQ2 cost figures/tables | RQ1, RQ2 | Primary path for LIME/LIME-HPO plans. |
+| `JIT-SDP/plan_final.py` | Build plans for candidate-based explainers (CfExplainer/PyExplainer). | JIT-SDP RQ1 flip-rate and RQ2 cost figures/tables | RQ1, RQ2 | Use before flip simulations for candidate explainers. |
+| `JIT-SDP/plan_closest.py` | Generate closest/minimum-change plans across JIT explainers. | JIT-SDP RQ1 flip-rate and RQ2 cost figures/tables | RQ1, RQ2 | Run when you need minimum-guidance/closest-plan evaluation. |
+| `JIT-SDP/cf.py` | Generate DeFlip counterfactuals for JIT-SDP. | DeFlip lines in JIT-SDP figures/tables | RQ1, RQ2 | Shares sparsity/distance options with SDP. |
+| `JIT-SDP/flip_exp.py` & `JIT-SDP/flip_closest.py` | Flip simulation for JIT plans (full vs closest). | JIT-SDP RQ1 flip-rate figures/tables | RQ1 | Add `--get_flip_rate` for aggregate-only runs. |
+| `JIT-SDP/evaluate_final.py` & `JIT-SDP/evaluate_closest.py` | Aggregate JIT flip rates, change magnitudes, and naturalness metrics. | JIT-SDP RQ1–RQ3 tables/plots | RQ1, RQ2, RQ3 | Use `evaluate_closest.py` for smallest-change plan pipeline. |
+| `plot_rq1.py`, `plot_rq2.py`, `plot_rq3.py` | Regenerate combined figures from cached evaluation CSVs. | RQ1–RQ3 figures in the paper | RQ1, RQ2, RQ3 | Reads outputs from `evaluate_*` scripts. |
+
+## How to Reproduce the Experiments
+
+1. **Environment setup**
+   * Python 3.10+ is recommended.
+   * Install dependencies:
+     ```bash
+     pip install -r requirements.txt
+     ```
+   * (Release-based preprocessing) Install the R package [`Rnalytica`](https://cran.r-project.org/package=Rnalytica) and ensure `rpy2` can locate your R installation.
+
+2. **Configure datasets**
+   * Update dataset paths in `SDP/hyparams.py` and `JIT-SDP/hyparams.py` to point to your local copies (raw CSVs and preprocessed splits).
+
+3. **Quick-start smoke test**
+   * Run a compact JIT-SDP end-to-end test (train → explain → plan → flip → evaluate) on the default settings:
+     ```bash
+     python replication_cli.py jit run-all --projects all --models RandomForest --explainers LIME-HPO --closest
+     ```
+   * Use the script–figure mapping above to decide which full-scale commands to run for each figure/table.
+
+### Reproducing RQ1 (Validity of Actionable Guidance)
+
+* **Release-based SDP:**
+  1. Preprocess and train models:
+     ```bash
+     python replication_cli.py sdp preprocess
+     python replication_cli.py sdp train-models --include-extended-models
+     ```
+  2. Run explainers and plans (example with LIME-HPO):
+     ```bash
+     python replication_cli.py sdp explain --model-type RandomForest --explainer-type LIME-HPO --project all
+     python replication_cli.py sdp plan-actions --model-type RandomForest --explainer-type LIME-HPO --project all
+     ```
+  3. Flip simulation and aggregation for RQ1 figures/tables:
+     ```bash
+     python replication_cli.py sdp flip --model-type RandomForest --explainer-type LIME-HPO --project all
+     python replication_cli.py sdp evaluate --rq1 --explainer all --models all --projects all
+     ```
+
+* **JIT-SDP:**
+  1. Preprocess and train:
+     ```bash
+     python replication_cli.py jit train-models
+     ```
+  2. Run explainers and plans (example with CfExplainer):
+     ```bash
+     python replication_cli.py jit explain --model-type RandomForest --explainer-type CfExplainer --project all
+     python replication_cli.py jit plan-actions --model-type RandomForest --explainer-type CfExplainer --project all
+     ```
+  3. Flip simulation and aggregation for RQ1 figures/tables:
+     ```bash
+     python replication_cli.py jit flip --model-type RandomForest --explainer-type CfExplainer --project all
+     python replication_cli.py jit evaluate --rq1 --explainer all --models all --projects all
+     ```
+
+### Reproducing RQ2 (Cost-efficiency and Precision)
+
+* After completing RQ1 steps, reuse the same flip outputs and run the evaluations that quantify change magnitudes:
+  * **Release-based SDP:**
+    ```bash
+    python replication_cli.py sdp evaluate --rq2 --explainer all --models all --projects all
+    ```
+  * **JIT-SDP:**
+    ```bash
+    python replication_cli.py jit evaluate --rq2 --explainer all --models all --projects all
+    ```
+
+### Reproducing RQ3 (Naturalness of Modifications)
+
+* Ensure flip experiments are completed, then run the RQ3 aggregation to compute Mahalanobis (or cosine) distances between suggested changes and historical modifications:
+  * **Release-based SDP:**
+    ```bash
+    python replication_cli.py sdp evaluate --rq3 --distance mahalanobis --explainer all --models all --projects all --use-default-groups
+    ```
+  * **JIT-SDP:**
+    ```bash
+    python replication_cli.py jit evaluate --rq3 --distance mahalanobis --explainer all --models all --projects all --use-default-groups
+    ```
+
+### Counterfactual (DeFlip) Generation
+
+* To generate DeFlip/NICE counterfactuals directly (used alongside plan-based outputs):
   ```bash
-  python replication_cli.py jit train-models
+  python replication_cli.py sdp counterfactuals --project all --model-types RandomForest,SVM,XGBoost --max-features 5 --distance unit_l2
+  python replication_cli.py jit flip --model-type RandomForest --explainer-type CF --project all --get-flip-rate
   ```
+* Adjust `--max-features` (sparsity budget), `--distance`, and `--nice-distance-metric` as needed.
 
-- Evaluate previously trained models:
+## Command-Line Interface Reference
 
-  ```bash
-  python replication_cli.py jit train-models --evaluate-only
-  ```
+`replication_cli.py` wraps all study scripts with consistent options. Run `python replication_cli.py --help` or add `--help` to any subcommand for full details.
 
-- Run LIME/LIME-HPO/CfExplainer/PyExplainer explanations for a specific or all projects:
+### Global structure
 
-  ```bash
-  python replication_cli.py jit explain \
-      --model-type RandomForest \
-      --explainer-type CfExplainer \
-      --project all
-  ```
+```bash
+python replication_cli.py {jit|sdp} <command> [options]
+```
 
-- Convert explanation outputs into actionable plans. Use `--closest` to build the
-  minimum-change variants or omit it for the full plan set. CfExplainer/PyExplainer
-  plans are constructed from their mined rules via `plan_final.py`:
+### JIT-SDP commands
 
-  ```bash
-  python replication_cli.py jit plan-actions \
-      --model-type RandomForest \
-      --explainer-type PyExplainer \
-      --project all \
-      --closest
-  ```
+* `train-models` – Train or evaluate JIT classifiers. Add `--evaluate-only` to skip retraining.
+* `explain` – Run explainers (`--explainer-type {LIME,LIME-HPO,CfExplainer,PyExplainer}`) for specified models/projects.
+* `plan-actions` – Convert explainer outputs into actionable plans. Use `--closest` for minimum-change plans or `--compute-importance` for feature importance instead of plans.
+* `flip` – Apply plans or counterfactuals to test true positives (`--get-flip-rate` aggregates only; `--fresh` recomputes flips; `--closest` reads closest-plan outputs).
+* `evaluate` – Aggregate RQ metrics (`--rq1`, `--rq2`, `--rq3`, `--implications`) with optional `--distance {mahalanobis,cosine}` and `--use-default-groups` for RQ3 grouping.
+* `run-all` – Full JIT pipeline across selected models/explainers/projects; supports `--closest` and `--evaluate-only`.
 
-- Apply plans to flip predictions (run this before plotting):
+### Release-based SDP commands
 
-  ```bash
-  python replication_cli.py jit flip \
-      --model-type RandomForest \
-      --explainer-type LIME-HPO \
-      --project all \
-  ```
+* `preprocess` – Prepare release datasets (noise handling, missing-value fixes, AutoSpearman feature selection).
+* `train-models` – Train or evaluate SDP classifiers. Add `--include-extended-models` to also fit LightGBM and CatBoost.
+* `explain` – Run range-based explainers (`--explainer-type {LIME,LIME-HPO,TimeLIME,SQAPlanner}`).
+* `plan-actions` – Build actionable plans from explanations; optionally compute importance ratios with `--compute-importance`.
+* `mine-rules` – Required for SQAPlanner: mine association rules via BigML (`.env` must supply `BIGML_USERNAME` and `BIGML_API_KEY`).
+* `counterfactuals` – Generate DeFlip/NICE counterfactuals with sparsity and distance controls (`--max-features`, `--exact-k`, `--distance`, `--nice-distance-metric`, `--overwrite`).
+* `flip` – Apply plans to test true positives (`--fresh` recomputes flips; `--get-flip-rate` aggregates only; `--closest` uses minimum-change plans).
+* `evaluate` – Aggregate RQ metrics (`--rq1`, `--rq2`, `--rq3`, `--implications`) and compute distances for RQ3.
+* `run-all` – Full SDP pipeline with options to `--skip-preprocess`, `--skip-training`, `--include-counterfactuals`, `--include-extended-models`, and `--closest`.
 
-- Summarize flip experiments for RQ tables/plots (defaults to running all RQs; add
-  `--closest` to use the closest-plan pipeline and `--use-default-groups` for RQ3):
-
-  ```bash
-  python replication_cli.py jit evaluate --explainer all --models all --projects all
-  ```
-
-- Run the full JIT pipeline (train → explain → plan → flip → evaluate) across all
-  model/explainer combinations with a single command. Add `--closest` to use the
-  closest-plan path and `--evaluate-only` to reuse existing models:
-
-  ```bash
-  python replication_cli.py jit run-all --projects all --models all --explainers all
-  ```
-
-### SDP
-
-For the SDP study, some explainers require extra steps (e.g., rule mining for
-SQAPlanner) and DeFlip counterfactuals are generated via `niceml.py`. The CLI
-captures each stage explicitly:
-
-- Preprocess the raw dataset into per-release splits (requires R):
-
-  ```bash
-  python replication_cli.py sdp preprocess
-  ```
-
-- Train all models (or re-evaluate saved models with `--evaluate-only`). Add
-  `--include-extended-models` to also fit the LightGBM and CatBoost models from
-  `train_models_new.py` (needed if you plan to generate DeFlip/NICE
-  counterfactuals for those learners):
-
-  ```bash
-  python replication_cli.py sdp train-models --include-extended-models
-  ```
-
-- Run LIME/LIME-HPO/TimeLIME/SQAPlanner explanations:
-
-  ```bash
-  python replication_cli.py sdp explain \
-      --model-type RandomForest \
-      --explainer-type LIME-HPO \
-      --project all
-  ```
-
-- (SQAPlanner only) Mine association rules on the generated instances before
-  creating plans. BigML credentials must be present in `.env`:
-
-  ```bash
-  python replication_cli.py sdp mine-rules \
-      --model-type SQAPlanner \
-      --search-strategy confidence \
-      --project activemq@2
-  ```
-
-- Convert explanation outputs into closest plans (works for LIME, LIME-HPO,
-  TimeLIME, and SQAPlanner; include `--search-strategy` if your explanations
-  were stored under a subfolder such as `confidence/`):
-
-  ```bash
-  python replication_cli.py sdp plan-actions \
-      --model-type RandomForest \
-      --explainer-type LIME-HPO \
-      --project all \
-  ```
-
-  Use `--compute-importance` to compute feature-importance ratios instead of
-  writing plan files.
-
-- Generate DeFlip/NICE counterfactuals (writes `experiments/{project}/{model}/CF_all.csv`):
-
-  ```bash
-  python replication_cli.py sdp counterfactuals \
-      --project all \
-      --model-types RandomForest,SVM,XGBoost \
-      --max-features 5 \
-      --distance unit_l2
-  ```
-
-- Apply plans to flip predictions (run this before plotting the plan-based
-  explainers). Add `--closest` to read from `plans_closest/` and
-  `experiments_closest/`:
-
-  ```bash
-  python replication_cli.py sdp flip \
-      --model-type RandomForest \
-      --explainer-type LIME-HPO \
-      --project all \
-  ```
-
-- Summarize flip experiments and DeFlip counterfactuals for plotting:
-
-  ```bash
-  python replication_cli.py sdp evaluate --explainer all --models all --projects all
-  ```
-
-- Run the full SDP pipeline (preprocess → train → explain → plan → flip → optional
-  counterfactuals → evaluate) across all model/explainer combinations. Add
-  `--closest` to restrict to closest plans, `--include-counterfactuals` to also run
-  `niceml.py`, and `--include-extended-models` to build LightGBM/CatBoost models:
-
-  ```bash
-  python replication_cli.py sdp run-all --projects all --models all --explainers all \
-      --include-extended-models --include-counterfactuals
-  ```
-
-## Plotting
-
-Once experiments finish, the `plot_rq*.py` scripts can be used to regenerate the figures
-from the paper. Each script reads the CSV outputs written by the training/explanation
-pipelines (see the constants in the script bodies for expected locations).
-
-## Notes and Tips
-
-- Paths in the study-specific `hyparams.py` files are relative to the repository root by
-  default. Adjust them as needed for your environment.
-- The explainers use multiprocessing; ensure your machine has enough memory to spawn
-  concurrent workers when running the explanation commands.
-- For quick smoke tests, you can point the dataset paths to a reduced sample and run the
-  CLI with the same commands shown above.
-- The overall workflow for actionability is: (1) run explainers, (2) generate plans using
-  the new `plan-actions` commands, and (3) flip simulation (4) evaluate using the study-specific scripts
-  such as `SDP/evaluate_cf.py` or the `evaluate_*` utilities under `JIT-SDP/`. Some
-  explainers require extra manual steps (e.g., SQAPlanner needs BigML credentials for
-  rule mining via `SDP/mining_sqa_rules.py`). Refer to the inline comments inside each
-  script for the exact sequencing.
+Use the workflow and mapping tables above to select the command combinations that reproduce specific figures and tables.
