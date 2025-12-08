@@ -237,3 +237,11 @@ python replication_cli.py {jit|sdp} <command> [options]
 * `run-all` – Full SDP pipeline with options to `--skip-preprocess`, `--skip-training`, `--include-counterfactuals`, `--include-extended-models`, and `--closest`.
 
 Use the workflow and mapping tables above to select the command combinations that reproduce specific figures and tables.
+
+@article{lee2025deflip,
+  title={DeFlip: Towards Trustworthy Actionable Software Defect Prediction via Fine-grained Counterfactuals},
+  author={Lee, Gichan and Lee, Joonwoo and Lee, Scott Uk-Jin},
+  journal={Empirical Software Engineering},
+  year={2025},
+  note={Under Review}
+}
