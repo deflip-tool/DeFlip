@@ -238,6 +238,11 @@ python replication_cli.py {jit|sdp} <command> [options]
 
 Use the workflow and mapping tables above to select the command combinations that reproduce specific figures and tables.
 
+### Authors
+* Gichan Lee, Hanyang University (fantasyopy@hanyang.ac.kr)
+* Joonwoo Lee, Hanyang University (joonywlee@hanyang.ac.kr)
+* Scott Uk-Jin Lee, Hanyang University(scottlee@hanyang.ac.kr)
+  
 @article{lee2025deflip,
   title={DeFlip: Towards Trustworthy Actionable Software Defect Prediction via Fine-grained Counterfactuals},
   author={Lee, Gichan and Lee, Joonwoo and Lee, Scott Uk-Jin},
