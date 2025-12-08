@@ -62,31 +62,35 @@ DeFlip/
 
 ## Experimental Workflow (High-Level)
 
-1. **Raw dataset → Preprocessing**
+![Figure 2. Overview of the experimental design and data flow](Figure_2.png)
+
+Figure 2 summarizes the end-to-end workflow. Each step below links directly to the corresponding scripts so reviewers can jump from the diagram to runnable code.
+
+1. **Raw dataset → Preprocessing** ([`SDP/preprocess.py`](SDP/preprocess.py), [`JIT-SDP/preprocess_jit.py`](JIT-SDP/preprocess_jit.py))
    * Start from raw release-based SDP datasets and the ApacheJIT JIT-SDP dataset.
    * Clean and prepare the data by removing noise, handling missing or incorrect values, and applying **AutoSpearman** feature selection to drop highly correlated features.
    * Output: processed datasets for each project/domain.
 
-2. **SDP model training**
+2. **SDP model training** ([`SDP/train_models.py`](SDP/train_models.py), [`SDP/train_models_new.py`](SDP/train_models_new.py), [`JIT-SDP/train_models_jit.py`](JIT-SDP/train_models_jit.py))
    * Train five defect prediction models on the processed datasets: **Random Forest, SVM, XGBoost, LightGBM, CatBoost**.
    * Use release-to-release prediction for release-based SDP and an 80/20 split for JIT-SDP.
 
-3. **Test-set prediction**
+3. **Test-set prediction** (integrated in the training scripts above)
    * Apply trained models to the test set to obtain defect predictions.
    * Focus on **true positive** defective instances as seeds for actionable guidance.
 
-4. **Actionable guidance generation (baseline explainers + DeFlip)**
+4. **Actionable guidance generation (baseline explainers + DeFlip)** ([`SDP/run_explainer.py`](SDP/run_explainer.py), [`JIT-SDP/run_explainer.py`](JIT-SDP/run_explainer.py), [`JIT-SDP/run_cfexp.py`](JIT-SDP/run_cfexp.py), [`JIT-SDP/run_pyexp.py`](JIT-SDP/run_pyexp.py), [`SDP/cf.py`](SDP/cf.py), [`JIT-SDP/cf.py`](JIT-SDP/cf.py))
    * For each predicted defective instance, generate guidance using:
      * **Range-based explainers:** LIME, LIME-HPO, TimeLIME, SQAPlanner
      * **Candidate-based explainers:** PyExplainer, CfExplainer
      * **DeFlip counterfactuals**
 
-5. **DeFlip’s three phases**
+5. **DeFlip’s three phases** ([`SDP/cf.py`](SDP/cf.py), [`SDP/niceml.py`](SDP/niceml.py), [`JIT-SDP/cf.py`](JIT-SDP/cf.py))
    * **Phase 1 – Neighbor Anchoring (with NICE):** Use NICE to find the nearest non-defective instance in training data via HEOM distance; this anchor grounds the search in real project history.
    * **Phase 2 – Constrained Beam Search:** Starting from the defective instance, perform beam search toward the anchor while changing at most **K features**, retaining only candidates that flip the prediction to “clean” within the sparsity budget.
    * **Phase 3 – Fine-grained Optimization:** Incrementally pull each modified feature back toward its original value (binary search) until just inside the non-defective region, minimizing change magnitude while preserving the flip.
 
-6. **Evaluation (RQ1–RQ3)**
+6. **Evaluation (RQ1–RQ3)** ([`SDP/flip_exp.py`](SDP/flip_exp.py), [`SDP/flip_closest.py`](SDP/flip_closest.py), [`SDP/evaluate_cf.py`](SDP/evaluate_cf.py), [`JIT-SDP/flip_exp.py`](JIT-SDP/flip_exp.py), [`JIT-SDP/flip_closest.py`](JIT-SDP/flip_closest.py), [`JIT-SDP/evaluate_final.py`](JIT-SDP/evaluate_final.py), [`JIT-SDP/evaluate_closest.py`](JIT-SDP/evaluate_closest.py), [`plot_rq1.py`](plot_rq1.py), [`plot_rq2.py`](plot_rq2.py), [`plot_rq3.py`](plot_rq3.py))
    * **RQ1 – Validity of actionable guidance:** Flip simulation on model predictions; compute flip rate and exploration depth.
    * **RQ2 – Cost-efficiency and precision:** Measure change magnitude for successful flips under the sparsity constraint.
    * **RQ3 – Naturalness of modifications:** Compare suggested changes to historical modifications using multivariate distance (e.g., Mahalanobis).
