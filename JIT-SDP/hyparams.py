@@ -12,7 +12,8 @@ EXPERIMENTS = "./experiments"
 RESULTS = "./flip_rates"
 
 # ---------------- JIT Dataset configuration ----------------
-ROOT_DIR = "/Users/joony/Downloads/DeFlip-main"
+import os
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Where your raw JIT CSV lives (total.csv with all projects)
 JIT_DATASET_PATH = f"{ROOT_DIR}/JIT-SDP/Dataset/apachejit_total.csv"
 

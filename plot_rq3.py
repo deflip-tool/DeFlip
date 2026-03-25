@@ -36,11 +36,6 @@ from scipy.spatial.distance import mahalanobis
 from scipy.stats import gaussian_kde, mannwhitneyu
 from cliffs_delta import cliffs_delta
 import matplotlib as mpl
-import matplotlib.pyplot as plt
-from scipy.spatial.distance import mahalanobis
-from scipy.stats import gaussian_kde, mannwhitneyu
-from cliffs_delta import cliffs_delta
-import matplotlib as mpl
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes  # NEW
 # ---------------------------------------------------------------------
 # Global font

@@ -10,3 +10,10 @@ natsort
 mlxtend
 rpy2
 matplotlib
+lime
+cliffs-delta
+tabulate
+nice
+bigml
+scipy
+python-dotenv

@@ -283,7 +283,7 @@ def sdp_generate_counterfactuals(
         if verbose:
             args.append("--verbose")
 
-        run_script(study_path / "niceml.py", args)
+        run_script(study_path / "cf.py", args)
 
 
 def jit_run_all(
